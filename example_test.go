@@ -26,7 +26,7 @@ func ExampleFile_MarshalText() {
 			},
 			{
 				Number:     3,
-				Start:      trackThreeStart,
+				Start:      TrackThreeStart,
 				Type:       TypeData,
 				SectorSize: SectorSize,
 				Name:       "track03.bin",

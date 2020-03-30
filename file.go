@@ -20,12 +20,13 @@ const (
 	Extension = ".gdi"
 	// SectorSize is the standard sector size used for tracks
 	SectorSize = 2352
-)
-
-const (
-	minTracks       = 3
-	maxTracks       = 99
-	trackThreeStart = 45000
+	// MinTracks is the minimum number of tracks that must exist
+	MinTracks = 3
+	// MaxTracks is the maximum number of tracks that can exist
+	MaxTracks = 99
+	// TrackThreeStart is the starting sector for track three, the
+	// beginning of the high density area
+	TrackThreeStart = 45000
 )
 
 // Type represents the type of track
@@ -114,11 +115,11 @@ func split(s string) ([]string, error) {
 }
 
 func (f *File) validate() error {
-	if f.Count < minTracks {
+	if f.Count < MinTracks {
 		return errNotEnoughTracks
 	}
 
-	if f.Count > maxTracks {
+	if f.Count > MaxTracks {
 		return errTooManyTracks
 	}
 
@@ -129,7 +130,7 @@ func (f *File) validate() error {
 	for i, track := range f.Tracks {
 		switch i {
 		case 2: // 3rd track, always starts at 45000
-			if track.Start != trackThreeStart {
+			if track.Start != TrackThreeStart {
 				return errInvalidStart
 			}
 			fallthrough
