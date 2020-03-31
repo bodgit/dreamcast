@@ -4,8 +4,44 @@ import (
 	"fmt"
 )
 
+func ExampleFile_IsValid() {
+	file := File{
+		Count: 3,
+		Tracks: []Track{
+			{
+				Number:     1,
+				Start:      0,
+				Type:       TypeData,
+				SectorSize: SectorSize,
+				Name:       "track01.bin",
+				Zero:       0,
+			},
+			{
+				Number:     2,
+				Start:      756,
+				Type:       TypeAudio,
+				SectorSize: SectorSize,
+				Name:       "track02.raw",
+				Zero:       0,
+			},
+			{
+				Number:     3,
+				Start:      TrackThreeStart,
+				Type:       TypeData,
+				SectorSize: SectorSize,
+				Name:       "track03.bin",
+				Zero:       0,
+			},
+		},
+		Flags: 0,
+	}
+
+	fmt.Println(file.IsValid())
+	// Output: true
+}
+
 func ExampleFile_MarshalText() {
-	file := &File{
+	file := File{
 		Count: 3,
 		Tracks: []Track{
 			{

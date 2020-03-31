@@ -58,6 +58,7 @@ var (
 	errInconsistentTracks  = errors.New("inconsistent tracks")
 	errInvalidStart        = errors.New("invalid start")
 	errInvalidType         = errors.New("invalid track type")
+	errOverlappingTracks   = errors.New("overlapping tracks")
 	errNonContinuousTracks = errors.New("non-continuous tracks")
 	errInvalidSectorSize   = errors.New("invalid sector size")
 	errFieldNotZero        = errors.New("field not zero")
@@ -115,7 +116,7 @@ func split(s string) ([]string, error) {
 	return fields, nil
 }
 
-func (f *File) validate() error {
+func (f File) validate() error {
 	if f.Count < minTracks {
 		return errNotEnoughTracks
 	}
@@ -128,6 +129,7 @@ func (f *File) validate() error {
 		return errInconsistentTracks
 	}
 
+	start := -1
 	for i, track := range f.Tracks {
 		switch i {
 		case 2: // 3rd track, always starts at 45000
@@ -145,6 +147,11 @@ func (f *File) validate() error {
 			}
 		}
 
+		if track.Start <= start {
+			return errOverlappingTracks
+		}
+		start = track.Start
+
 		if track.Number != i+1 {
 			return errNonContinuousTracks
 		}
@@ -159,6 +166,13 @@ func (f *File) validate() error {
 	}
 
 	return nil
+}
+
+func (f File) IsValid() bool {
+	if err := f.validate(); err != nil {
+		return false
+	}
+	return true
 }
 
 // MarshalText encodes the GDI file into textual form

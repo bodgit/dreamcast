@@ -18,6 +18,66 @@ func TestType(t *testing.T) {
 	assert.Equal(t, Type(4), TypeData)
 }
 
+func TestIsValid(t *testing.T) {
+	tables := []struct {
+		got  File
+		want bool
+	}{
+		{
+			File{
+				Count: 3,
+				Tracks: []Track{
+					{
+						Number:     1,
+						Start:      0,
+						Type:       TypeData,
+						SectorSize: SectorSize,
+						Name:       "track01.bin",
+						Zero:       0,
+					},
+					{
+						Number:     2,
+						Start:      756,
+						Type:       TypeAudio,
+						SectorSize: SectorSize,
+						Name:       "track02.raw",
+						Zero:       0,
+					},
+					{
+						Number:     3,
+						Start:      TrackThreeStart,
+						Type:       TypeData,
+						SectorSize: SectorSize,
+						Name:       "track03.bin",
+						Zero:       0,
+					},
+				},
+			},
+			true,
+		},
+		{
+			File{
+				Count: 1,
+				Tracks: []Track{
+					{
+						Number:     1,
+						Start:      0,
+						Type:       TypeData,
+						SectorSize: SectorSize,
+						Name:       "track01.bin",
+						Zero:       0,
+					},
+				},
+			},
+			false,
+		},
+	}
+
+	for _, table := range tables {
+		assert.Equal(t, table.want, table.got.IsValid())
+	}
+}
+
 func TestUnmarshalText(t *testing.T) {
 	tables := []struct {
 		got  string
@@ -161,6 +221,16 @@ INVALID 0 4 2352 track01.bin 0
 `,
 			nil,
 			errInvalidType,
+		},
+		// Track starts go backwards
+		{
+			`3
+1 756 4 2352 track01.bin 0
+2 0 0 2352 "track02.raw" 0
+3 45000 4 2352 track03.bin 0
+`,
+			nil,
+			errOverlappingTracks,
 		},
 		// Jump in track number
 		{
