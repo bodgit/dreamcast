@@ -168,6 +168,7 @@ func (f File) validate() error {
 	return nil
 }
 
+// IsValid checks if the GDI file is valid or not
 func (f File) IsValid() bool {
 	if err := f.validate(); err != nil {
 		return false
