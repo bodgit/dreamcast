@@ -40,6 +40,34 @@ func ExampleFile_IsValid() {
 	// Output: true
 }
 
+func ExampleTrack_IsAudioTrack() {
+	track := Track{
+		Number:     2,
+		Start:      756,
+		Type:       TypeAudio,
+		SectorSize: SectorSize,
+		Name:       "track02.raw",
+		Zero:       0,
+	}
+
+	fmt.Println(track.IsAudioTrack())
+	// Output: true
+}
+
+func ExampleTrack_IsDataTrack() {
+	track := Track{
+		Number:     1,
+		Start:      0,
+		Type:       TypeData,
+		SectorSize: SectorSize,
+		Name:       "track01.bin",
+		Zero:       0,
+	}
+
+	fmt.Println(track.IsDataTrack())
+	// Output: true
+}
+
 func ExampleFile_MarshalText() {
 	file := File{
 		Count: 3,

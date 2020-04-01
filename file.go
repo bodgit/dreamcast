@@ -90,6 +90,16 @@ type Track struct {
 	Zero int
 }
 
+// IsAudioTrack returns true if the track is audio
+func (t Track) IsAudioTrack() bool {
+	return t.Type == TypeAudio
+}
+
+// IsDataTrack returns true if the track is data
+func (t Track) IsDataTrack() bool {
+	return t.Type == TypeData
+}
+
 const (
 	trackNumber = iota
 	trackStart

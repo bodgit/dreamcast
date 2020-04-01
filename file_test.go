@@ -18,6 +18,76 @@ func TestType(t *testing.T) {
 	assert.Equal(t, Type(4), TypeData)
 }
 
+func TestIsAudioTrack(t *testing.T) {
+	file := File{
+		Count: 3,
+		Tracks: []Track{
+			{
+				Number:     1,
+				Start:      0,
+				Type:       TypeData,
+				SectorSize: SectorSize,
+				Name:       "track01.bin",
+				Zero:       0,
+			},
+			{
+				Number:     2,
+				Start:      756,
+				Type:       TypeAudio,
+				SectorSize: SectorSize,
+				Name:       "track02.raw",
+				Zero:       0,
+			},
+			{
+				Number:     3,
+				Start:      TrackThreeStart,
+				Type:       TypeData,
+				SectorSize: SectorSize,
+				Name:       "track03.bin",
+				Zero:       0,
+			},
+		},
+	}
+
+	assert.Equal(t, true, file.Tracks[1].IsAudioTrack())
+	assert.Equal(t, false, file.Tracks[0].IsAudioTrack())
+}
+
+func TestIsDataTrack(t *testing.T) {
+	file := File{
+		Count: 3,
+		Tracks: []Track{
+			{
+				Number:     1,
+				Start:      0,
+				Type:       TypeData,
+				SectorSize: SectorSize,
+				Name:       "track01.bin",
+				Zero:       0,
+			},
+			{
+				Number:     2,
+				Start:      756,
+				Type:       TypeAudio,
+				SectorSize: SectorSize,
+				Name:       "track02.raw",
+				Zero:       0,
+			},
+			{
+				Number:     3,
+				Start:      TrackThreeStart,
+				Type:       TypeData,
+				SectorSize: SectorSize,
+				Name:       "track03.bin",
+				Zero:       0,
+			},
+		},
+	}
+
+	assert.Equal(t, true, file.Tracks[0].IsDataTrack())
+	assert.Equal(t, false, file.Tracks[1].IsDataTrack())
+}
+
 func TestIsValid(t *testing.T) {
 	tables := []struct {
 		got  File
