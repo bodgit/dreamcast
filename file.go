@@ -204,7 +204,7 @@ func (f File) MarshalText() ([]byte, error) {
 		startWidth = 1
 	}
 
-	fmt.Fprintf(b, "%d\n", len(f.Tracks))
+	fmt.Fprintf(b, "%d\n", f.Count)
 
 	for _, track := range f.Tracks {
 		name := track.Name
@@ -278,4 +278,12 @@ func (f *File) UnmarshalText(text []byte) error {
 	}
 
 	return f.validate()
+}
+
+// Copy returns a deep copy of the File object
+func (f File) Copy() *File {
+	file := f
+	file.Tracks = make([]Track, len(f.Tracks))
+	copy(file.Tracks, f.Tracks)
+	return &file
 }

@@ -489,3 +489,25 @@ func TestMarshalText(t *testing.T) {
 		}
 	}
 }
+
+func TestCopy(t *testing.T) {
+	file := &File{
+		Count: 1,
+		Tracks: []Track{
+			{
+				Number:     1,
+				Start:      0,
+				Type:       TypeData,
+				SectorSize: SectorSize,
+				Name:       "track01.bin",
+				Zero:       0,
+			},
+		},
+	}
+	clone := file.Copy()
+
+	assert.NotSame(t, file, clone)
+	assert.Equal(t, file, clone)
+	file.Tracks[0].Type = TypeAudio
+	assert.NotEqual(t, file, clone)
+}
