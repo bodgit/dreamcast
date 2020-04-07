@@ -416,7 +416,7 @@ func TestMarshalText(t *testing.T) {
 						Zero:       0,
 					},
 				},
-				Flags: NoWhitespace,
+				Flags: TrimWhitespace,
 			},
 			`3
 1 0 4 2352 track01.bin 0

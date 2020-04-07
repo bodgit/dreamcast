@@ -47,8 +47,8 @@ const (
 type Flag int
 
 const (
-	// NoWhitespace disables padding/alignment with additional spaces
-	NoWhitespace Flag = 1 << iota
+	// TrimWhitespace disables padding/alignment with additional spaces
+	TrimWhitespace Flag = 1 << iota
 )
 
 var (
@@ -196,11 +196,11 @@ func (f File) MarshalText() ([]byte, error) {
 
 	last := f.Tracks[len(f.Tracks)-1]
 	numberWidth := len(strconv.FormatUint(uint64(last.Number), 10))
-	if f.Flags&NoWhitespace != 0 {
+	if f.Flags&TrimWhitespace != 0 {
 		numberWidth = 1
 	}
 	startWidth := len(strconv.FormatUint(uint64(last.Start), 10))
-	if f.Flags&NoWhitespace != 0 {
+	if f.Flags&TrimWhitespace != 0 {
 		startWidth = 1
 	}
 
