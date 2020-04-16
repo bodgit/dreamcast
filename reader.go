@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/bodgit/dreamcast/gdi"
+	"github.com/bodgit/plumbing"
 )
 
 const (
@@ -30,36 +31,42 @@ type Reader interface {
 	OpenFile(string) (io.ReadCloser, error)
 	// FileSize returns the size of the named file
 	FileSize(string) (uint64, error)
+	// Rx returns the number of bytes read
+	Rx() uint64
 }
 
 // DirectoryReader reads a Dreamcast game from a directory
 type DirectoryReader struct {
 	directory *os.File
+	rx        plumbing.WriteCounter
 }
 
 // NewDirectoryReader returns a DirectoryReader using the passed directory path
-func NewDirectoryReader(directory string) (*DirectoryReader, error) {
-	file, err := os.Open(directory)
-	if err != nil {
-		return nil, err
-	}
+func NewDirectoryReader(directory string) (r *DirectoryReader, err error) {
+	r = &DirectoryReader{}
 
-	info, err := file.Stat()
+	r.directory, err = os.Open(directory)
 	if err != nil {
-		file.Close()
-		return nil, err
+		return
+	}
+	defer func() {
+		if err != nil {
+			r.directory.Close()
+		}
+	}()
+
+	var info os.FileInfo
+	info, err = r.directory.Stat()
+	if err != nil {
+		return
 	}
 
 	if !info.IsDir() {
-		file.Close()
-		return nil, &os.PathError{"open", directory, syscall.ENOTDIR}
+		err = &os.PathError{"open", directory, syscall.ENOTDIR}
+		return
 	}
 
-	r := &DirectoryReader{
-		directory: file,
-	}
-
-	return r, nil
+	return
 }
 
 // Close closes the directory
@@ -80,11 +87,11 @@ func (r DirectoryReader) findFileByExtension(extension string) (io.ReadCloser, s
 
 	for _, name := range names {
 		if strings.HasSuffix(name, extension) {
-			file, err := os.Open(filepath.Join(r.directory.Name(), name))
+			reader, err := r.OpenFile(name)
 			if err != nil {
 				return nil, "", err
 			}
-			return file, name, nil
+			return reader, name, nil
 		}
 	}
 
@@ -105,7 +112,12 @@ func (r DirectoryReader) FindGDIFile() (io.ReadCloser, string, error) {
 
 // OpenFile returns an io.ReadCloser for the named file
 func (r DirectoryReader) OpenFile(filename string) (io.ReadCloser, error) {
-	return os.Open(filepath.Join(r.directory.Name(), filename))
+	file, err := os.Open(filepath.Join(r.directory.Name(), filename))
+	if err != nil {
+		return nil, err
+	}
+
+	return plumbing.TeeReadCloser(file, &r.rx), nil
 }
 
 // FileSize returns the size of the named file
@@ -118,30 +130,52 @@ func (r DirectoryReader) FileSize(filename string) (uint64, error) {
 	return uint64(info.Size()), nil
 }
 
+// Rx returns the number of bytes read
+func (r DirectoryReader) Rx() uint64 {
+	return r.rx.Count()
+}
+
 // ZipFileReader reads a Dreamcast game from a zip archive
 type ZipFileReader struct {
+	file     *os.File
 	filename string
-	reader   *zip.ReadCloser
+	reader   *zip.Reader
+	rx       plumbing.WriteCounter
 }
 
 // NewZipFileReader returns a ZipFileReader using the passed zip file path
-func NewZipFileReader(zipFile string) (*ZipFileReader, error) {
-	reader, err := zip.OpenReader(zipFile)
-	if err != nil {
-		return nil, err
-	}
-
-	r := &ZipFileReader{
+func NewZipFileReader(zipFile string) (r *ZipFileReader, err error) {
+	r = &ZipFileReader{
 		filename: zipFile,
-		reader:   reader,
 	}
 
-	return r, nil
+	r.file, err = os.Open(zipFile)
+	if err != nil {
+		return
+	}
+	defer func() {
+		if err != nil {
+			r.file.Close()
+		}
+	}()
+
+	var info os.FileInfo
+	info, err = r.file.Stat()
+	if err != nil {
+		return
+	}
+
+	r.reader, err = zip.NewReader(plumbing.TeeReaderAt(r.file, &r.rx), info.Size())
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 // Close closes the zip file
 func (r ZipFileReader) Close() error {
-	return r.reader.Close()
+	return r.file.Close()
 }
 
 func (r ZipFileReader) findFileByExtension(extension string) (io.ReadCloser, string, error) {
@@ -187,4 +221,9 @@ func (r ZipFileReader) FileSize(filename string) (uint64, error) {
 		}
 	}
 	return 0, &os.PathError{"stat", r.filename, syscall.ENOENT}
+}
+
+// Rx returns the number of bytes read
+func (r ZipFileReader) Rx() uint64 {
+	return r.rx.Count()
 }

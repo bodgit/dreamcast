@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/bodgit/dreamcast/gdi"
+	"github.com/bodgit/plumbing"
 )
 
 // Writer is the interface implemented by an object that can be used as a
@@ -19,6 +20,8 @@ type Writer interface {
 	CreateFile(string) (io.WriteCloser, error)
 	// Config returns the WriterConfig associated with this writer
 	Config() WriterConfig
+	// Tx returns the number of bytes written
+	Tx() uint64
 }
 
 // WriterConfig contains the configuration of the Writer
@@ -53,6 +56,7 @@ func GDemuTrackName(track gdi.Track) string {
 type DirectoryWriter struct {
 	directory string
 	config    WriterConfig
+	tx        plumbing.WriteCounter
 }
 
 // NewDirectoryWriter returns a DirectoryWriter using the passed directory
@@ -77,8 +81,12 @@ func (w DirectoryWriter) Close() error {
 
 // CreateFile creates the named file in the directory and returns an
 // io.WriteCloser for it
-func (w DirectoryWriter) CreateFile(filename string) (io.WriteCloser, error) {
-	return os.Create(filepath.Join(w.directory, filename))
+func (w *DirectoryWriter) CreateFile(filename string) (io.WriteCloser, error) {
+	file, err := os.Create(filepath.Join(w.directory, filename))
+	if err != nil {
+		return nil, err
+	}
+	return plumbing.MultiWriteCloser(file, plumbing.NopWriteCloser(&w.tx)), nil
 }
 
 // Config returns the WriterConfig associated with this writer
@@ -86,12 +94,9 @@ func (w DirectoryWriter) Config() WriterConfig {
 	return w.config
 }
 
-type nopCloser struct {
-	io.Writer
-}
-
-func (nopCloser) Close() error {
-	return nil
+// Tx returns the number of bytes written
+func (w DirectoryWriter) Tx() uint64 {
+	return w.tx.Count()
 }
 
 // ZipFileWriter writes a Dreamcast game to a zip archive
@@ -99,6 +104,7 @@ type ZipFileWriter struct {
 	file   *os.File
 	writer *zip.Writer
 	config WriterConfig
+	tx     plumbing.WriteCounter
 }
 
 // NewZipFileWriter returns a ZipFileWriter using the passed zip file path
@@ -111,9 +117,9 @@ func NewZipFileWriter(filename string, config WriterConfig) (*ZipFileWriter, err
 
 	w := &ZipFileWriter{
 		file:   file,
-		writer: zip.NewWriter(file),
 		config: config,
 	}
+	w.writer = zip.NewWriter(io.MultiWriter(file, &w.tx))
 
 	return w, nil
 }
@@ -134,10 +140,15 @@ func (w ZipFileWriter) CreateFile(filename string) (io.WriteCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return nopCloser{writer}, nil
+	return plumbing.NopWriteCloser(writer), nil
 }
 
 // Config returns the WriterConfig associated with this writer
 func (w ZipFileWriter) Config() WriterConfig {
 	return w.config
+}
+
+// Tx returns the number of bytes written
+func (w ZipFileWriter) Tx() uint64 {
+	return w.tx.Count()
 }
